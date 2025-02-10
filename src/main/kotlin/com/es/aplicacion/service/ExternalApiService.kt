@@ -24,7 +24,7 @@ class ExternalApiService(private val webClient: WebClient.Builder) {
     fun obtenerMunicipiosDesdeApi(cpro: String): DatosMunicipios? {
         return webClient.build()
             .get()
-            .uri("https://apiv1.geoapi.es/municipios?CPRO=${cpro}type=JSON&key=$apiKey")
+            .uri("https://apiv1.geoapi.es/municipios?CPRO=${cpro}&type=JSON&key=$apiKey")
             .retrieve()
             .bodyToMono(DatosMunicipios::class.java)
             .block() // ⚠️ Esto bloquea el hilo, usar `subscribe()` en código reactivo

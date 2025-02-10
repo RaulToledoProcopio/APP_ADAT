@@ -6,7 +6,6 @@ import com.es.aplicacion.error.exception.BadRequestException
 import com.es.aplicacion.error.exception.UnauthorizedException
 import com.es.aplicacion.model.Usuario
 import com.es.aplicacion.repository.UsuarioRepository
-import com.mongodb.DuplicateKeyException
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.security.core.userdetails.User
 import org.springframework.security.core.userdetails.UserDetails
@@ -41,7 +40,6 @@ class UsuarioService : UserDetailsService {
 
     fun insertUser(usuarioInsertadoDTO: UsuarioRegisterDTO) : UsuarioDTO {
 
-
         // COMPROBACIONES
         // Comprobar si los campos vienen vacíos
         if (usuarioInsertadoDTO.username.isBlank()
@@ -53,7 +51,7 @@ class UsuarioService : UserDetailsService {
         }
 
         // Fran ha comprobado que el usuario existe previamente
-        if(usuarioRepository.findByUsername(usuarioInsertadoDTO.username).isEmpty) {
+        if(usuarioRepository.findByUsername(usuarioInsertadoDTO.username).isPresent) {
             throw Exception("Usuario ${usuarioInsertadoDTO.username} ya está registrado")
         }
 
@@ -72,22 +70,31 @@ class UsuarioService : UserDetailsService {
 
         // Comprobar la provincia
         val datosProvincias = externalApiService.obtenerProvinciasDesdeApi()
-        var CPRO: String = ""
+        var cpro: String = ""
         if(datosProvincias != null) {
             if(datosProvincias.data != null) {
                 val provinciaEncontrada = datosProvincias.data.stream().filter {
-                    it.PRO == usuarioInsertadoDTO.direccion.provincia
+                    it.PRO == usuarioInsertadoDTO.direccion.provincia.uppercase()
                 }.findFirst().orElseThrow {
                     BadRequestException("Provincia ${usuarioInsertadoDTO.direccion.provincia} no encontrada")
                 }
-                CPRO = provinciaEncontrada.CPRO
+                cpro = provinciaEncontrada.CPRO
             }
         }
 
         // Comprobar el municipio
-        val datosMunicipios = null
+        val datosMunicipios = externalApiService.obtenerMunicipiosDesdeApi(cpro)
+        if(datosMunicipios != null) {
+            if(datosMunicipios.data != null) {
+                datosMunicipios.data.stream().filter {
+                    it.DMUN50 == usuarioInsertadoDTO.direccion.municipio.uppercase()
+                }.findFirst().orElseThrow {
+                    BadRequestException("Municipio ${usuarioInsertadoDTO.direccion.municipio} incorrecto")
+                }
+            }
+        }
 
-        // Insertar el user
+        // Insertar el user (convierto a Entity)
         val usuario = Usuario(
              null,
             usuarioInsertadoDTO.username,
@@ -97,8 +104,10 @@ class UsuarioService : UserDetailsService {
             usuarioInsertadoDTO.direccion
         )
 
+        // inserto en bd
         usuarioRepository.insert(usuario)
 
+        // retorno un DTO
         return UsuarioDTO(
             usuario.username,
             usuario.email,

@@ -16,9 +16,11 @@ import org.springframework.security.core.Authentication
 import org.springframework.security.core.AuthenticationException
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
+@RequestMapping("/usuarios")
 class UsuarioController {
 
     @Autowired
@@ -32,11 +34,11 @@ class UsuarioController {
     fun insert(
         httpRequest: HttpServletRequest,
         @RequestBody usuarioRegisterDTO: UsuarioRegisterDTO
-    ) : ResponseEntity<UsuarioDTO>?{
+    ) : ResponseEntity<UsuarioDTO>{
 
-        // TODO: Implementar este metodo
+        val usuarioInsertadoDTO: UsuarioDTO = usuarioService.insertUser(usuarioRegisterDTO)
 
-        return ResponseEntity(null, HttpStatus.CREATED)
+        return ResponseEntity(usuarioInsertadoDTO, HttpStatus.CREATED)
 
     }
 
